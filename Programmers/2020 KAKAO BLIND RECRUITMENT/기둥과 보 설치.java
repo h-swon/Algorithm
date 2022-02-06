@@ -1,87 +1,89 @@
-import java.util.*;
-
 class Solution {
     
-    static final int PILLAR = 0;
-    static final int BEAM = 1;
-    static final int DESTRUCT = 0;
-    static final int CONSTRUCT = 1;
-    
-    boolean[][] pillars, beams; // 기둥, 보
+    boolean[][] pillars, beams;
+    int count;
+    int N;
     
     public int[][] solution(int n, int[][] build_frame) {
-        int structureCount = 0;
         
-        pillars = new boolean[n + 3][n + 3];
-        beams = new boolean[n + 3][n + 3];
+        pillars = new boolean[n+3][n+3];
+        beams = new boolean[n+3][n+3];
+        N = n;
         
         for(int[] frame : build_frame){
             int x = frame[0] + 1;
             int y = frame[1] + 1;
-            int structureType = frame[2];
-            int commandType = frame[3];
+            int type = frame[2];
+            int action = frame[3];
             
-            if(commandType == CONSTRUCT){
-                if(structureType == PILLAR && canConstructPillar(x, y)){
-                    pillars[x][y] = true;
-                    structureCount++;
+            setFrame(x, y, type, action);            
+        }
+
+        int[][] answer = new int[count][3];
+        int idx=0;
+
+        for(int i=1; i<=n+1; i++){
+            for(int j=1; j<=n+1; j++){
+                if(pillars[j][i]){
+                    answer[idx++] = new int[]{i-1, j-1, 0};
                 }
-                if(structureType == BEAM && canConstructBeam(x, y)){
-                    beams[x][y] = true;
-                    structureCount++;
-                }
-            } else if(commandType == DESTRUCT){
-                if(structureType == PILLAR){
-                    pillars[x][y] = false;
-                } else if(structureType == BEAM){
-                    beams[x][y] = false;
-                }
- 
-                if(canDestruct(x, y, structureType, n)){
-                    structureCount--;
-                    continue;
-                }
-                
-                if(structureType == PILLAR){
-                    pillars[x][y] = true;
-                } else if(structureType == BEAM){
-                    beams[x][y] = true;
+                if(beams[j][i]){
+                    answer[idx++] = new int[]{i-1, j-1, 1};
                 }
             }
         }
-            
-            int index = 0;
-            int[][] answer = new int[structureCount][3];
-            
-            for(int i = 1 ; i <= n + 1 ; ++i){
-                for(int j = 1 ; j <= n + 1 ; ++j){
-                    if(pillars[i][j]) answer[index++] = new int[]{i - 1, j - 1, PILLAR};
-                    if(beams[i][j]) answer[index++] = new int[]{i - 1, j - 1, BEAM};
+        return answer;
+    }
+    
+    public void setFrame(int x, int y, int type, int action){
+        if(type == 0){  // 기둥
+            if(action == 0){    // 삭제
+                pillars[y][x] = false;
+                count--;
+                if(!canDelete(x, y)){
+                    pillars[y][x] = true;
+                    count++;
+                }
+            } else{             // 설치
+                if(canBuildPillar(x, y)){
+                    pillars[y][x] = true;
+                    count++;
                 }
             }
-            return answer;
-    }
-    
-    private boolean canConstructPillar(int x, int y){
-        return y == 1 || pillars[x][y - 1] || beams[x][y] || beams[x - 1][y];
-    }
-    
-    private boolean canConstructBeam(int x, int y){
-        return pillars[x][y - 1] || pillars[x + 1][y - 1] || (beams[x - 1][y] && beams[x + 1][y]);
-    }
-    
-    private boolean canDestruct(int x, int y, int structureType, int n){       
-        for(int i = 1 ; i <= n + 1 ; ++i){
-            for(int j = 1 ; j <= n + 1 ; ++j){
-                if(pillars[i][j] && !canConstructPillar(i, j)){
-                    return false;
+        } else{ // 보
+            if(action == 0){    // 삭제
+                beams[y][x] = false;
+                count--;
+                if(!canDelete(x, y)){
+                    beams[y][x] = true;
+                    count++;
                 }
-                if(beams[i][j] && !canConstructBeam(i, j)){
-                    return false;
+            } else{             // 설치
+                if(canBuildBeam(x, y)){
+                    beams[y][x] = true;
+                    count++;
                 }
             }
         }
-        
+    }
+    
+    public boolean canBuildPillar(int x, int y){
+        return y==1 || pillars[y-1][x] || beams[y][x-1] || beams[y][x];
+    }
+    
+    public boolean canBuildBeam(int x, int y){
+        return pillars[y-1][x] || pillars[y-1][x+1] ||
+            (beams[y][x-1] && beams[y][x+1]);
+    }
+    
+    public boolean canDelete(int x, int y){
+        for(int i=1; i<=N+1; i++){
+            for(int j=1; j<=N+1; j++){
+                if(pillars[j][i] && !canBuildPillar(i, j)) return false;
+                if(beams[j][i] && !canBuildBeam(i, j)) return false;
+            }
+        }
         return true;
     }
+
 }
